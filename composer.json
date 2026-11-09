@@ -1,0 +1,21 @@
+{
+    "name": "jorgeescalonas/login-mvc",
+    "description": "Login piloto en PHP con MVC, POO, SOLID y PSR-4",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "jorge Escalona",
+            "email": "escalonajorge73@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.2",
+        "vlucas/phpdotenv": "^5.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    }
+}
