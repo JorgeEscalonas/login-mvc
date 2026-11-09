@@ -1,0 +1,16 @@
+# Dependencias instaladas por Composer
+/vendor/
+
+# Configuración sensible (contraseñas de BD)
+.env
+
+# Archivos del sistema operativo
+Thumbs.db
+.DS_Store
+
+# Editores
+.idea/
+.vscode/
+
+# Logs
+*.log
