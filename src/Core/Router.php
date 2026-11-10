@@ -6,15 +6,15 @@ namespace App\Core;
 
 class Router
 {
-    /** @var array<string, array<string, callable|array>> */
+    /** @var array<string, array<string, callable>> */
     private array $routes = [];
 
-    public function get(string $path, callable|array $handler): void
+    public function get(string $path, callable $handler): void
     {
         $this->addRoute('GET', $path, $handler);
     }
 
-    public function post(string $path, callable|array $handler): void
+    public function post(string $path, callable $handler): void
     {
         $this->addRoute('POST', $path, $handler);
     }
@@ -32,16 +32,10 @@ class Router
             return;
         }
 
-        if (is_array($handler)) {
-            [$class, $action] = $handler;
-            (new $class())->$action();
-            return;
-        }
-
         $handler();
     }
 
-    private function addRoute(string $method, string $path, callable|array $handler): void
+    private function addRoute(string $method, string $path, callable $handler): void
     {
         $this->routes[$method][$path] = $handler;
     }
