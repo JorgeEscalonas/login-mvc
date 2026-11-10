@@ -56,6 +56,7 @@ class AuthController
         $this->session->regenerate();
         $this->session->set('user_id', $user->id);
         $this->session->set('user_name', $user->name);
+        $this->session->set('user_role', $user->role->value);
 
         $this->redirect('/dashboard');
     }

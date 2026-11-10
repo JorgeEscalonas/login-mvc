@@ -20,6 +20,7 @@ class DashboardController
         $this->view->render('dashboard/index', [
             'title' => 'Panel',
             'name'  => (string) $this->session->get('user_name'),
+            'role'  => (string) $this->session->get('user_role'),
         ]);
     }
 }

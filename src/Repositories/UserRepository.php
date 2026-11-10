@@ -6,6 +6,7 @@ namespace App\Repositories;
 
 use App\Core\Database;
 use App\Models\User;
+use App\Models\Role;
 
 class UserRepository implements UserRepositoryInterface
 {
@@ -16,7 +17,7 @@ class UserRepository implements UserRepositoryInterface
     public function findBYEmail(string $email): ?User
     {
        $statement = $this->database->getConnection()->prepare(
-            'SELECT id, name, email, password FROM users WHERE email = :email LIMIT 1'
+            'SELECT id, name, email, password, role FROM users WHERE email = :email LIMIT 1'
         );
 
         $statement->execute(['email' => $email]);
@@ -26,12 +27,12 @@ class UserRepository implements UserRepositoryInterface
         if ($row === false) {
             return null;
         }
-
         return new User(
-            id: (int)$row['id'],
+            id: (int) $row['id'],
             name: $row['name'],
             email: $row['email'],
-            passwordHash: $row['password']
+            passwordHash: $row['password'],
+            role: Role::from($row['role']),
         );
     }
 }
