@@ -5,6 +5,7 @@
 <?php endif; ?>
 
 <form method="POST" action="/login" novalidate>
+    <?= $this->csrfField() ?>
     <label for="email">Correo electrónico</label>
     <input type="email" id="email" name="email"
            value="<?= $this->e($email ?? '') ?>" required autofocus>

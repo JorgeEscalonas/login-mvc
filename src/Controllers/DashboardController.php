@@ -17,11 +17,6 @@ class DashboardController
 
     public function index(): void
     {
-        if (!$this->session->has('user_id')) {
-            header('Location: /login');
-            exit;
-        }
-
         $this->view->render('dashboard/index', [
             'title' => 'Panel',
             'name'  => (string) $this->session->get('user_name'),

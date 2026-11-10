@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Session;
 use App\Core\View;
 use App\Services\AuthService;
+use App\Core\Csrf;
 
 class AuthController
 {
@@ -14,6 +15,7 @@ class AuthController
         private readonly AuthService $auth,
         private readonly View $view,
         private readonly Session $session,
+        private readonly Csrf $csrf,
     ) {
     }
 
@@ -28,6 +30,12 @@ class AuthController
 
     public function login(): void
     {
+        if (!$this->csrf->isValid($_POST['_csrf'] ?? null)) {
+            http_response_code(419);
+            $this->renderLogin('Sesión expirada. Intenta de nuevo.');
+            return;
+        }
+
         $email = trim((string) ($_POST['email'] ?? ''));
         $password = (string) ($_POST['password'] ?? '');
 
@@ -65,5 +73,24 @@ class AuthController
     {
         header('Location: ' . $path);
         exit;
+    }
+
+        public function logout(): void
+    {
+        if (!$this->csrf->isValid($_POST['_csrf'] ?? null)) {
+            http_response_code(419);
+            echo 'Solicitud no válida.';
+            return;
+        }
+
+        $this->session->destroy();
+        $this->redirect('/login');
+    }
+
+    private function csrfIsValid(): bool
+    {
+        $token = $_POST['_csrf'] ?? null;
+
+        return $this->csrf->isValid(is_string($token) ? $token : null);
     }
 }
