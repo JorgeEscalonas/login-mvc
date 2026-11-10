@@ -20,6 +20,10 @@ use App\Services\AuthService;
 use Dotenv\Dotenv;
 use App\Core\AuthMiddleware;
 use App\Core\Csrf;
+use App\Controllers\RegisterController;
+use App\Controllers\UserManagementController;
+use App\Services\RegisterService;
+use App\Services\UserManagementService;
 
 Dotenv::createImmutable(__DIR__ . '/..')->load();
 
@@ -38,14 +42,18 @@ $session->start();
 $csrf = new Csrf($session);
 $view = new View(__DIR__ . '/../src/Views', $csrf);
 $database = new Database($config);
-$authMiddleware = new AuthMiddleware($session);
 
 // --- Capas de la aplicación (de abajo hacia arriba) ---
 $userRepository = new UserRepository($database);
+$authMiddleware = new AuthMiddleware($session, $userRepository);
 $authService = new AuthService($userRepository);
+$registerService = new RegisterService($userRepository, $userRepository);
+$userManagementService = new UserManagementService($userRepository, $userRepository);
 
 $authController = new AuthController($authService, $view, $session, $csrf);
-$dashboardController = new DashboardController($view, $session);
+$registerController = new RegisterController($registerService, $view, $session, $csrf);
+$userManagementController = new UserManagementController($userManagementService, $view, $session, $csrf);
+$dashboardController = new DashboardController($view, $session, $userRepository);
 
 // --- Rutas ---
 $router = new Router();
@@ -54,6 +62,16 @@ $router->get('/', [$authController, 'showLogin']);
 $router->get('/login', [$authController, 'showLogin']);
 $router->post('/login', [$authController, 'login']);
 $router->post('/logout', [$authController, 'logout']);
+
+$router->get('/register', [$registerController, 'showForm']);
+$router->post('/register', [$registerController, 'store']);
+
+$router->get('/admin/users', $authMiddleware->adminOnly([$userManagementController, 'index']));
+$router->get('/admin/users/create', $authMiddleware->adminOnly([$userManagementController, 'create']));
+$router->post('/admin/users/store', $authMiddleware->adminOnly([$userManagementController, 'store']));
+$router->get('/admin/users/edit', $authMiddleware->adminOnly([$userManagementController, 'edit']));
+$router->post('/admin/users/update', $authMiddleware->adminOnly([$userManagementController, 'update']));
+$router->post('/admin/users/delete', $authMiddleware->adminOnly([$userManagementController, 'delete']));
 
 $router->get('/dashboard', $authMiddleware->protect([$dashboardController, 'index']));
 

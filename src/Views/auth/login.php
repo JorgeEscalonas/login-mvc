@@ -14,4 +14,5 @@
     <input type="password" id="password" name="password" required>
 
     <button type="submit">Entrar</button>
+    <p class="link">¿No tienes cuenta? <a href="/register">Regístrate</a></p>
 </form>
