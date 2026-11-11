@@ -78,6 +78,7 @@ button:hover { background: #1d4ed8; }
 .link a { color: #2563eb; }
 
 .wide-card { max-width: 960px; }
+.card.wide { max-width: 720px; }
 .form-card { max-width: 680px; }
 .admin-heading, .admin-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .admin-heading { padding-bottom: 1.25rem; border-bottom: 1px solid var(--line); }

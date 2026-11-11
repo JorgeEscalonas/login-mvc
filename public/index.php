@@ -19,11 +19,16 @@ use App\Repositories\UserRepository;
 use App\Services\AuthService;
 use Dotenv\Dotenv;
 use App\Core\AuthMiddleware;
+use App\Core\RoleMiddleware;
 use App\Core\Csrf;
+use App\Models\Role;
+use App\Controllers\AdminController;
 use App\Controllers\RegisterController;
 use App\Controllers\UserManagementController;
 use App\Services\RegisterService;
 use App\Services\UserManagementService;
+use App\Repositories\LoginAttemptRepository;
+use App\Services\RateLimiter;
 
 Dotenv::createImmutable(__DIR__ . '/..')->load();
 
@@ -46,13 +51,16 @@ $database = new Database($config);
 // --- Capas de la aplicación (de abajo hacia arriba) ---
 $userRepository = new UserRepository($database);
 $authMiddleware = new AuthMiddleware($session, $userRepository);
+$roleMiddleware = new RoleMiddleware($session, $view, $userRepository);
 $authService = new AuthService($userRepository);
 $registerService = new RegisterService($userRepository, $userRepository);
-$userManagementService = new UserManagementService($userRepository, $userRepository);
+$userManagementService = new UserManagementService($userRepository, $userRepository, $userRepository);
+$rateLimiter = new RateLimiter(new LoginAttemptRepository($database));
 
-$authController = new AuthController($authService, $view, $session, $csrf);
+$authController = new AuthController($authService, $view, $session, $csrf, $rateLimiter);
 $registerController = new RegisterController($registerService, $view, $session, $csrf);
 $userManagementController = new UserManagementController($userManagementService, $view, $session, $csrf);
+$adminController = new AdminController($userRepository, $view);
 $dashboardController = new DashboardController($view, $session, $userRepository);
 
 // --- Rutas ---
@@ -62,6 +70,10 @@ $router->get('/', [$authController, 'showLogin']);
 $router->get('/login', [$authController, 'showLogin']);
 $router->post('/login', [$authController, 'login']);
 $router->post('/logout', [$authController, 'logout']);
+
+$router->get('/admin', $authMiddleware->protect(
+	$roleMiddleware->allow([Role::Admin], [$adminController, 'index'])
+));
 
 $router->get('/register', [$registerController, 'showForm']);
 $router->post('/register', [$registerController, 'store']);

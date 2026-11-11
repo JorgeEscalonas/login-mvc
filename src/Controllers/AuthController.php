@@ -8,6 +8,8 @@ use App\Core\Session;
 use App\Core\View;
 use App\Services\AuthService;
 use App\Core\Csrf;
+use App\Exceptions\TooManyAttemptsException;
+use App\Services\RateLimiter;
 
 class AuthController
 {
@@ -16,6 +18,7 @@ class AuthController
         private readonly View $view,
         private readonly Session $session,
         private readonly Csrf $csrf,
+        private readonly RateLimiter $limiter,
     ) {
     }
 
@@ -30,7 +33,7 @@ class AuthController
 
     public function login(): void
     {
-        if (!$this->csrf->isValid($_POST['_csrf'] ?? null)) {
+        if (!$this->csrfIsValid()) {
             http_response_code(419);
             $this->renderLogin('Sesión expirada. Intenta de nuevo.');
             return;
@@ -45,13 +48,28 @@ class AuthController
             return;
         }
 
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'desconocida';
+
+        try {
+            $this->limiter->ensureNotLocked($email, $ip);
+        } catch (TooManyAttemptsException $e) {
+            $minutes = (int) ceil($e->retryAfterSeconds() / 60);
+            http_response_code(429);
+            header('Retry-After: ' . $e->retryAfterSeconds());
+            $this->renderLogin("Demasiados intentos. Inténtalo de nuevo en {$minutes} minutos.", $email);
+            return;
+        }
+
         $user = $this->auth->attempt($email, $password);
 
         if ($user === null) {
+            $this->limiter->recordFailure($email, $ip);
             http_response_code(401);
             $this->renderLogin('Credenciales incorrectas.', $email);
             return;
         }
+
+        $this->limiter->reset($email, $ip);
 
         $this->session->regenerate();
         $this->session->set('user_id', $user->id);
@@ -60,7 +78,7 @@ class AuthController
 
         $this->redirect('/dashboard');
     }
-
+    
     private function renderLogin(?string $error = null, string $email = ''): void
     {
         $this->view->render('auth/login', [

@@ -8,7 +8,7 @@ use App\Core\Database;
 use App\Models\User;
 use App\Models\Role;
 
-class UserRepository implements UserRepositoryInterface, UserWriterInterface
+class UserRepository implements UserRepositoryInterface, UserWriterInterface, UserListInterface
 {
     public function __construct(private readonly Database $database)
     {
@@ -47,14 +47,20 @@ class UserRepository implements UserRepositoryInterface, UserWriterInterface
         return $row === false ? null : $this->toUser($row);
     }
 
-    /** @return list<User> */
-    public function findAll(): array
+    /** @return User[] */
+    public function all(): array
     {
         $statement = $this->database->getConnection()->query(
-            'SELECT id, name, email, password, role FROM users ORDER BY id DESC'
+            'SELECT id, name, email, password, role FROM users ORDER BY id'
         );
 
-        return array_map($this->toUser(...), $statement->fetchAll());
+        $users = [];
+
+        foreach ($statement->fetchAll() as $row) {
+            $users[] = $this->toUser($row);
+        }
+
+        return $users;
     }
 
         public function create(string $name, string $email, string $passwordHash, Role $role): User

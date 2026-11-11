@@ -3,7 +3,7 @@
 <p>Rol: <strong><?= $this->e($role) ?></strong></p>
 
 <?php if ($role === 'admin'): ?>
-    <p><a class="button-link button-primary" href="/admin/users">Administrar usuarios</a></p>
+    <p><a class="button-link button-primary" href="/admin">Ir a administración</a></p>
 <?php endif; ?>
 
 <form method="POST" action="/logout">
