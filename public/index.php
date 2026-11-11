@@ -24,6 +24,8 @@ use App\Controllers\RegisterController;
 use App\Controllers\UserManagementController;
 use App\Services\RegisterService;
 use App\Services\UserManagementService;
+use App\Repositories\LoginAttemptRepository;
+use App\Services\RateLimiter;
 
 Dotenv::createImmutable(__DIR__ . '/..')->load();
 
@@ -49,8 +51,9 @@ $authMiddleware = new AuthMiddleware($session, $userRepository);
 $authService = new AuthService($userRepository);
 $registerService = new RegisterService($userRepository, $userRepository);
 $userManagementService = new UserManagementService($userRepository, $userRepository);
+$rateLimiter = new RateLimiter(new LoginAttemptRepository($database));
 
-$authController = new AuthController($authService, $view, $session, $csrf);
+$authController = new AuthController($authService, $view, $session, $csrf, $rateLimiter);
 $registerController = new RegisterController($registerService, $view, $session, $csrf);
 $userManagementController = new UserManagementController($userManagementService, $view, $session, $csrf);
 $dashboardController = new DashboardController($view, $session, $userRepository);
