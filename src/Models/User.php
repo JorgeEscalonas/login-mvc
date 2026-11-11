@@ -11,6 +11,7 @@ class User
         public readonly string $name,
         public readonly string $email,
         public readonly string $passwordHash,
+        public readonly Role $role,
     ) {
     }
 }

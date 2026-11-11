@@ -8,8 +8,16 @@ use RuntimeException;
 
 class View
 {
-    public function __construct(private readonly string $basePath)
+    public function __construct(
+        private readonly string $basePath,
+        private readonly Csrf $csrf,
+    ) {
+    }
+
+    public function csrfField(): string
     {
+        return '<input type="hidden" name="_csrf" value="'
+            . $this->e($this->csrf->token()) . '">';
     }
 
     /** @param array<string, mixed> $data */
@@ -20,6 +28,7 @@ class View
         echo $this->capture('layouts/main', [
             'content' => $content,
             'title'   => $data['title'] ?? 'Login MVC',
+            'pageClass' => (string) ($data['pageClass'] ?? ''),
         ]);
     }
 

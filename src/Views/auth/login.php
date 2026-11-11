@@ -5,6 +5,7 @@
 <?php endif; ?>
 
 <form method="POST" action="/login" novalidate>
+    <?= $this->csrfField() ?>
     <label for="email">Correo electrónico</label>
     <input type="email" id="email" name="email"
            value="<?= $this->e($email ?? '') ?>" required autofocus>
@@ -13,4 +14,5 @@
     <input type="password" id="password" name="password" required>
 
     <button type="submit">Entrar</button>
+    <p class="link">¿No tienes cuenta? <a href="/register">Regístrate</a></p>
 </form>
