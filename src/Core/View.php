@@ -28,6 +28,7 @@ class View
         echo $this->capture('layouts/main', [
             'content' => $content,
             'title'   => $data['title'] ?? 'Login MVC',
+            'wide' => $data['wide'] ?? false,
             'pageClass' => (string) ($data['pageClass'] ?? ''),
         ]);
     }

@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-    <main class="card <?= $this->e($pageClass) ?>">
+    <main class="card<?= !empty($wide) ? ' wide' : '' ?><?= $pageClass !== '' ? ' ' . $this->e($pageClass) : '' ?>">
         <?= $content ?>
     </main>
 </body>

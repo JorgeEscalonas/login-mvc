@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Exceptions\ValidationException;
 use App\Models\Role;
 use App\Models\User;
+use App\Repositories\UserListInterface;
 use App\Repositories\UserRepositoryInterface;
 use App\Repositories\UserWriterInterface;
 use PDOException;
@@ -16,13 +17,14 @@ class UserManagementService
     public function __construct(
         private readonly UserRepositoryInterface $reader,
         private readonly UserWriterInterface $writer,
+        private readonly UserListInterface $list,
     ) {
     }
 
     /** @return list<User> */
     public function all(): array
     {
-        return $this->reader->findAll();
+        return $this->list->all();
     }
 
     public function find(int $id): ?User
