@@ -6,15 +6,16 @@ namespace App\Controllers;
 
 use App\Core\Session;
 use App\Core\View;
-use App\Services\AuthService;
+use App\Models\User;
 use App\Core\Csrf;
 use App\Exceptions\TooManyAttemptsException;
-use App\Services\RateLimiter;
+use App\Exceptions\ValidationException;
+use App\Core\RateLimiter;
 
 class AuthController
 {
     public function __construct(
-        private readonly AuthService $auth,
+        private readonly User $users,
         private readonly View $view,
         private readonly Session $session,
         private readonly Csrf $csrf,
@@ -39,14 +40,8 @@ class AuthController
             return;
         }
 
-        $email = trim((string) ($_POST['email'] ?? ''));
+        $email = (string) ($_POST['email'] ?? '');
         $password = (string) ($_POST['password'] ?? '');
-
-        if ($email === '' || $password === '') {
-            http_response_code(422);
-            $this->renderLogin('Completa todos los campos.', $email);
-            return;
-        }
 
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'desconocida';
 
@@ -60,7 +55,14 @@ class AuthController
             return;
         }
 
-        $user = $this->auth->attempt($email, $password);
+        try {
+            $user = $this->users->attempt($email, $password);
+        } catch (ValidationException $exception) {
+            http_response_code(422);
+            $errors = $exception->errors();
+            $this->renderLogin(reset($errors) ?: 'Completa los datos correctamente.', $email);
+            return;
+        }
 
         if ($user === null) {
             $this->limiter->recordFailure($email, $ip);

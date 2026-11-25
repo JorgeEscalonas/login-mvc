@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Core\View;
-use App\Repositories\UserListInterface;
+use App\Models\User;
 
 class AdminController
 {
     public function __construct(
-        private readonly UserListInterface $users,
+        private readonly User $users,
         private readonly View $view,
     ) {
     }

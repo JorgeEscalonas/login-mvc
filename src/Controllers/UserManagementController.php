@@ -9,12 +9,11 @@ use App\Core\Session;
 use App\Core\View;
 use App\Exceptions\ValidationException;
 use App\Models\User;
-use App\Services\UserManagementService;
 
 class UserManagementController
 {
     public function __construct(
-        private readonly UserManagementService $users,
+        private readonly User $users,
         private readonly View $view,
         private readonly Session $session,
         private readonly Csrf $csrf,
@@ -47,7 +46,7 @@ class UserManagementController
         $old = $this->oldInput();
 
         try {
-            $this->users->create(
+            $this->users->createManaged(
                 $old['name'],
                 $old['email'],
                 $this->input('password'),
@@ -65,7 +64,7 @@ class UserManagementController
 
     public function edit(): void
     {
-        $user = $this->users->find($this->requestId());
+        $user = $this->users->findById($this->requestId());
 
         if ($user === null) {
             http_response_code(404);
@@ -85,7 +84,7 @@ class UserManagementController
         }
 
         $id = $this->requestId();
-        $user = $this->users->find($id);
+        $user = $this->users->findById($id);
 
         if ($user === null) {
             http_response_code(404);
@@ -96,7 +95,7 @@ class UserManagementController
         $old = $this->oldInput();
 
         try {
-            $this->users->update(
+            $this->users->updateManaged(
                 $id,
                 $old['name'],
                 $old['email'],
@@ -123,7 +122,7 @@ class UserManagementController
         }
 
         try {
-            $this->users->delete(
+            $this->users->deleteManaged(
                 $this->requestId(),
                 (int) $this->session->get('user_id'),
             );
@@ -159,7 +158,7 @@ class UserManagementController
     {
         return [
             'name' => $this->input('name'),
-            'email' => mb_strtolower(trim($this->input('email'))),
+            'email' => $this->input('email'),
             'role' => $this->input('role'),
         ];
     }

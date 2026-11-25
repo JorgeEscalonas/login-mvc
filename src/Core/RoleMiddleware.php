@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Core;
 
 use App\Models\Role;
-use App\Repositories\UserRepositoryInterface;
+use App\Models\User;
 
 class RoleMiddleware
 {
     public function __construct(
         private readonly Session $session,
         private readonly View $view,
-        private readonly UserRepositoryInterface $users,
+        private readonly User $users,
     ) {
     }
 

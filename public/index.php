@@ -15,8 +15,7 @@ use App\Core\Database;
 use App\Core\Router;
 use App\Core\Session;
 use App\Core\View;
-use App\Repositories\UserRepository;
-use App\Services\AuthService;
+use App\Models\User;
 use Dotenv\Dotenv;
 use App\Core\AuthMiddleware;
 use App\Core\RoleMiddleware;
@@ -25,10 +24,7 @@ use App\Models\Role;
 use App\Controllers\AdminController;
 use App\Controllers\RegisterController;
 use App\Controllers\UserManagementController;
-use App\Services\RegisterService;
-use App\Services\UserManagementService;
-use App\Repositories\LoginAttemptRepository;
-use App\Services\RateLimiter;
+use App\Core\RateLimiter;
 
 Dotenv::createImmutable(__DIR__ . '/..')->load();
 
@@ -48,20 +44,17 @@ $csrf = new Csrf($session);
 $view = new View(__DIR__ . '/../src/Views', $csrf);
 $database = new Database($config);
 
-// --- Capas de la aplicación (de abajo hacia arriba) ---
-$userRepository = new UserRepository($database);
-$authMiddleware = new AuthMiddleware($session, $userRepository);
-$roleMiddleware = new RoleMiddleware($session, $view, $userRepository);
-$authService = new AuthService($userRepository);
-$registerService = new RegisterService($userRepository, $userRepository);
-$userManagementService = new UserManagementService($userRepository, $userRepository, $userRepository);
-$rateLimiter = new RateLimiter(new LoginAttemptRepository($database));
+// --- Aplicación ---
+$user = new User($database);
+$authMiddleware = new AuthMiddleware($session, $user);
+$roleMiddleware = new RoleMiddleware($session, $view, $user);
+$rateLimiter = new RateLimiter($session);
 
-$authController = new AuthController($authService, $view, $session, $csrf, $rateLimiter);
-$registerController = new RegisterController($registerService, $view, $session, $csrf);
-$userManagementController = new UserManagementController($userManagementService, $view, $session, $csrf);
-$adminController = new AdminController($userRepository, $view);
-$dashboardController = new DashboardController($view, $session, $userRepository);
+$authController = new AuthController($user, $view, $session, $csrf, $rateLimiter);
+$registerController = new RegisterController($user, $view, $session, $csrf);
+$userManagementController = new UserManagementController($user, $view, $session, $csrf);
+$adminController = new AdminController($user, $view);
+$dashboardController = new DashboardController($view, $session, $user);
 
 // --- Rutas ---
 $router = new Router();

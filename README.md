@@ -38,15 +38,13 @@ login-mvc/
 │   ├── index.php        Front Controller y composition root
 │   └── css/style.css
 ├── src/                 Namespace App\ (PSR-4)
-│   ├── Core/            Router, Database, View, Session, Csrf, AuthMiddleware, RoleMiddleware
+│   ├── Core/            Router, Database, View, Session, Csrf, RateLimiter y middleware
 │   ├── Controllers/     Auth, Register, Dashboard, Admin y gestión de usuarios
 │   ├── Models/          User, Role (enum)
-│   ├── Repositories/    Interfaces y UserRepository, LoginAttemptRepository
-│   ├── Services/        AuthService, RegisterService, RateLimiter, UserManagementService
 │   ├── Exceptions/      ValidationException, TooManyAttemptsException
 │   └── Views/           Plantillas HTML (layouts, auth, admin, dashboard, errors)
 ├── config/              Configuración (database.php)
-├── database/            schema.sql, seed.php y migrations/
+├── database/            schema.sql y seed.php
 ├── composer.json
 └── .env.example
 ```
@@ -54,20 +52,19 @@ login-mvc/
 ### Flujo de una petición
 
 ```
-Navegador → public/index.php → Router → (Middleware) → Controller → Service → Repository → MySQL
-                                                           ↓
-                                                         View → HTML
+Navegador → public/index.php → Router → (Middleware) → Controller → Model → MySQL
+                                                        ↓
+                                                       View → HTML
 ```
 
 ### Responsabilidad de cada capa
 
 | Capa | Clases | Responsabilidad |
 |---|---|---|
-| **Modelo** | `User`, `Role` | Datos y rol del usuario |
+| **Modelo** | `User`, `Role` | Datos, reglas de usuario y acceso a sus registros mediante PDO |
 | **Vista** | `Views/*` y `View` | Mostrar información, sin decisiones |
-| **Controlador** | `AuthController`, `RegisterController`, `DashboardController`, `AdminController`, `UserManagementController` | Coordinar petición y respuesta |
-| **Servicio** | `AuthService`, `RegisterService`, `RateLimiter`, `UserManagementService` | Reglas de negocio de autenticación, registro y usuarios |
-| **Repositorio** | `UserRepository`, `LoginAttemptRepository` | Persistencia mediante PDO |
+| **Controlador** | `AuthController`, `RegisterController`, `DashboardController`, `AdminController`, `UserManagementController` | Coordinar petición, respuesta, sesión y vista |
+| **Infraestructura** | `Database`, `Router`, `Session`, `Csrf`, `RateLimiter` | Acceso técnico y protección de peticiones |
 
 ---
 
@@ -75,11 +72,11 @@ Navegador → public/index.php → Router → (Middleware) → Controller → Se
 
 | Principio | Dónde se aplica |
 |---|---|
-| **S** (Responsabilidad única) | `AuthService` verifica credenciales, `RateLimiter` controla intentos, `RegisterService` valida registros y `UserRepository` consulta la base. Los controladores coordinan HTTP. |
+| **S** (Responsabilidad única) | `User` contiene datos y reglas de usuario; los controladores coordinan HTTP y `RateLimiter` controla intentos en sesión. |
 | **O** (Abierto/Cerrado) | `AuthMiddleware` y `RoleMiddleware` añaden protección de rutas sin modificar el `Router`. |
-| **L** (Sustitución de Liskov) | Las dependencias por interfaz permiten sustituir implementaciones. No hay todavía una implementación en memoria ni una prueba automatizada que verifique esta sustitución. |
-| **I** (Segregación de interfaces) | `UserRepositoryInterface` (lectura puntual), `UserWriterInterface` (escritura) y `UserListInterface` (listado) separan los contratos según el uso. |
-| **D** (Inversión de dependencias) | Los servicios dependen de interfaces, no de MySQL. Las dependencias se inyectan desde `public/index.php`. |
+| **L** (Sustitución de Liskov) | Las clases se mantienen compatibles con sus tipos públicos y pueden ampliarse sin modificar las llamadas existentes. |
+| **I** (Segregación de interfaces) | Se evitan interfaces innecesarias: cada clase expone únicamente las operaciones usadas por el proyecto. |
+| **D** (Inversión de dependencias) | Las clases técnicas se pasan desde `public/index.php`; no se usan puertos, adaptadores ni interfaces internas de aplicación. |
 
 ---
 
@@ -91,7 +88,7 @@ Navegador → public/index.php → Router → (Middleware) → Controller → Se
 - `session_regenerate_id(true)` tras el login (evita fijación de sesión).
 - Cookie de sesión `HttpOnly` y `SameSite=Lax`.
 - Logout por POST, con destrucción de sesión y cookie.
-- Límite de intentos de login persistido en base de datos (no en sesión) y comprobado **antes** de verificar la contraseña.
+- Límite de intentos de login almacenado en sesión, comprobado **antes** de verificar la contraseña y reiniciado después de un login correcto.
 - El registro público asigna `Role::User` en el servidor; no acepta un rol enviado por el formulario.
 - Autorización con `RoleMiddleware`: consulta el rol actual en base de datos, deniega por defecto y devuelve HTTP 403 a usuarios autenticados sin permiso.
 - Las contraseñas nuevas tienen un máximo de 72 bytes, el límite considerado por bcrypt.
@@ -134,7 +131,7 @@ php -S localhost:8000 -t public
 
 Abrir `http://localhost:8000`. Credenciales de prueba: `admin@example.com` / `Admin1234`.
 
-> **Migraciones:** `schema.sql` contiene el esquema para una instalación nueva, por lo que no es necesario ejecutar `database/migrations/`. Las migraciones actualizan bases de datos existentes de versiones anteriores y deben aplicarse en orden numérico.
+> **Base de datos:** ejecutar `schema.sql` en una instalación nueva y `seed.php` para crear los datos iniciales.
 
 ---
 
