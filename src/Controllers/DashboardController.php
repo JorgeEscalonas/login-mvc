@@ -6,14 +6,14 @@ namespace App\Controllers;
 
 use App\Core\Session;
 use App\Core\View;
-use App\Repositories\UserRepositoryInterface;
+use App\Models\User;
 
 class DashboardController
 {
     public function __construct(
         private readonly View $view,
         private readonly Session $session,
-        private readonly UserRepositoryInterface $users,
+        private readonly User $users,
     ) {
     }
 

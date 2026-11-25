@@ -8,12 +8,12 @@ use App\Core\Csrf;
 use App\Core\Session;
 use App\Core\View;
 use App\Exceptions\ValidationException;
-use App\Services\RegisterService;
+use App\Models\User;
 
 class RegisterController
 {
     public function __construct(
-        private readonly RegisterService $register,
+        private readonly User $users,
         private readonly View $view,
         private readonly Session $session,
         private readonly Csrf $csrf,
@@ -44,7 +44,7 @@ class RegisterController
         $email = $this->input('email');
 
         try {
-            $user = $this->register->register(
+            $user = $this->users->register(
                 $name,
                 $email,
                 $this->input('password'),
