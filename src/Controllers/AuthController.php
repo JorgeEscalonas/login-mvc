@@ -29,7 +29,10 @@ class AuthController
             $this->redirect('/dashboard');
         }
 
-        $this->renderLogin();
+        $notice = ($_GET['password_reset'] ?? '') === '1'
+            ? 'Contraseña actualizada. Ya puedes iniciar sesión.'
+            : null;
+        $this->renderLogin(notice: $notice);
     }
 
     public function login(): void
@@ -81,12 +84,13 @@ class AuthController
         $this->redirect('/dashboard');
     }
     
-    private function renderLogin(?string $error = null, string $email = ''): void
+    private function renderLogin(?string $error = null, string $email = '', ?string $notice = null): void
     {
         $this->view->render('auth/login', [
             'title' => 'Iniciar sesión',
             'error' => $error,
             'email' => $email,
+            'notice' => $notice,
         ]);
     }
 

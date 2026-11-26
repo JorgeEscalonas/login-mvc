@@ -7,6 +7,7 @@ Proyecto universitario desarrollado con **PHP puro** (sin frameworks), arquitect
 ## Funcionalidades
 
 - **Login** con sesión, protección CSRF y cierre de sesión por POST.
+- **Recuperación local de contraseña** en tres pasos con token temporal de un solo uso.
 - **Registro público** con validación; las cuentas creadas desde el formulario reciben siempre el rol `user`. El administrador puede asignar roles desde el panel.
 - **Límite de intentos de login:** se cuentan los fallos de los últimos 15 minutos por combinación de correo + IP. Al alcanzar 5, los nuevos intentos reciben HTTP 429 mientras haya 5 fallos en esa ventana móvil; la respuesta incluye `Retry-After: 900`.
 - **Roles y permisos:** `admin` y `user`. `/admin` solo permite administradores; usuarios autenticados sin permiso reciben HTTP 403 y visitantes no autenticados son redirigidos al login.
@@ -39,7 +40,7 @@ login-mvc/
 │   └── css/style.css
 ├── src/                 Namespace App\ (PSR-4)
 │   ├── Core/            Router, Database, View, Session, Csrf, RateLimiter y middleware
-│   ├── Controllers/     Auth, Register, Dashboard, Admin y gestión de usuarios
+│   ├── Controllers/     Auth, Register, PasswordReset, Dashboard, Admin y gestión de usuarios
 │   ├── Models/          User, Role (enum)
 │   ├── Exceptions/      ValidationException, TooManyAttemptsException
 │   └── Views/           Plantillas HTML (layouts, auth, admin, dashboard, errors)
@@ -63,7 +64,7 @@ Navegador → public/index.php → Router → (Middleware) → Controller → Mo
 |---|---|---|
 | **Modelo** | `User`, `Role` | Datos, reglas de usuario y acceso a sus registros mediante PDO |
 | **Vista** | `Views/*` y `View` | Mostrar información, sin decisiones |
-| **Controlador** | `AuthController`, `RegisterController`, `DashboardController`, `AdminController`, `UserManagementController` | Coordinar petición, respuesta, sesión y vista |
+| **Controlador** | `AuthController`, `RegisterController`, `PasswordResetController`, `DashboardController`, `AdminController`, `UserManagementController` | Coordinar petición, respuesta, sesión y vista |
 | **Infraestructura** | `Database`, `Router`, `Session`, `Csrf`, `RateLimiter` | Acceso técnico y protección de peticiones |
 
 ---
@@ -89,6 +90,7 @@ Navegador → public/index.php → Router → (Middleware) → Controller → Mo
 - Cookie de sesión `HttpOnly` y `SameSite=Lax`.
 - Logout por POST, con destrucción de sesión y cookie.
 - Límite de intentos de login almacenado en sesión, comprobado **antes** de verificar la contraseña y reiniciado después de un login correcto.
+- Recuperación local en tres pasos: solicitar token, verificarlo y elegir contraseña. El token aleatorio se guarda como hash, dura 15 minutos y solo se escribe en la terminal con `APP_ENV=development` y acceso desde localhost. Al terminar, vuelve al login; una nueva solicitud invalida el token anterior. No sustituye el envío de correo en producción.
 - El registro público asigna `Role::User` en el servidor; no acepta un rol enviado por el formulario.
 - Autorización con `RoleMiddleware`: consulta el rol actual en base de datos, deniega por defecto y devuelve HTTP 403 a usuarios autenticados sin permiso.
 - Las contraseñas nuevas tienen un máximo de 72 bytes, el límite considerado por bcrypt.
@@ -117,6 +119,12 @@ Crear la base de datos y todas sus tablas (con MySQL iniciado):
 mysql -u root < database/schema.sql
 ```
 
+Para agregar la tabla de recuperación a una base existente:
+
+```bash
+mysql -u root < database/password_reset.sql
+```
+
 Crear el usuario administrador de prueba (ejecutar una sola vez):
 
 ```bash
@@ -131,7 +139,7 @@ php -S localhost:8000 -t public
 
 Abrir `http://localhost:8000`. Credenciales de prueba: `admin@example.com` / `Admin1234`.
 
-> **Base de datos:** ejecutar `schema.sql` en una instalación nueva y `seed.php` para crear los datos iniciales.
+> **Base de datos:** ejecutar `schema.sql` en una instalación nueva, o `password_reset.sql` si la base ya existía; ejecutar `seed.php` para crear los datos iniciales.
 
 ---
 
@@ -158,7 +166,7 @@ Abrir `http://localhost:8000`. Credenciales de prueba: `admin@example.com` / `Ad
 
 ## 8. Limitaciones conocidas
 
-- Es un **piloto**: no incluye recuperación de contraseña ni confirmación de correo electrónico.
+- Es un **piloto**: la recuperación funciona solo en desarrollo local y no incluye confirmación de correo electrónico.
 - La autorización admin consulta el rol en la base de datos; cambiar el rol afecta el acceso a `/admin` en la siguiente petición protegida.
 - El límite de intentos usa solo `REMOTE_ADDR`. Detrás de un proxy inverso habría que configurar la IP real de forma segura.
 - Los intentos fallidos no se purgan automáticamente; se borran para esa combinación de correo + IP tras un login correcto.

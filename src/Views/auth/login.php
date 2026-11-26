@@ -1,5 +1,9 @@
 <h1>Iniciar sesión</h1>
 
+<?php if (!empty($notice)): ?>
+    <p class="alert-success"><?= $this->e($notice) ?></p>
+<?php endif; ?>
+
 <?php if (!empty($error)): ?>
     <p class="alert"><?= $this->e($error) ?></p>
 <?php endif; ?>
@@ -14,5 +18,6 @@
     <input type="password" id="password" name="password" required>
 
     <button type="submit">Entrar</button>
+    <p class="link"><a href="/forgot-password">¿Olvidaste tu contraseña?</a></p>
     <p class="link">¿No tienes cuenta? <a href="/register">Regístrate</a></p>
 </form>
