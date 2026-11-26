@@ -83,6 +83,117 @@ class User
         return password_verify($password, $user->passwordHash) ? $user : null;
     }
 
+    public function createPasswordResetToken(string $email): ?string
+    {
+        $email = mb_strtolower(trim($email));
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 150) {
+            return null;
+        }
+
+        if ($this->findByEmail($email) === null) {
+            return null;
+        }
+
+        $token = bin2hex(random_bytes(32));
+        $statement = $this->database->getConnection()->prepare(
+            'INSERT INTO password_reset_tokens (email, token_hash, expires_at)
+             VALUES (:email, :token_hash, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 15 MINUTE))
+             ON DUPLICATE KEY UPDATE
+                token_hash = :token_hash_update,
+                expires_at = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 15 MINUTE)'
+        );
+        $tokenHash = hash('sha256', $token);
+        $statement->execute([
+            'email' => $email,
+            'token_hash' => $tokenHash,
+            'token_hash_update' => $tokenHash,
+        ]);
+
+        return $token;
+    }
+
+    public function isPasswordResetTokenValid(string $email, string $token): bool
+    {
+        $email = mb_strtolower(trim($email));
+        $token = $this->normalizeResetToken($token);
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || $token === null) {
+            return false;
+        }
+
+        $statement = $this->database->getConnection()->prepare(
+            'SELECT token_hash FROM password_reset_tokens
+             WHERE email = :email AND expires_at > CURRENT_TIMESTAMP LIMIT 1'
+        );
+        $statement->execute(['email' => $email]);
+        $reset = $statement->fetch();
+
+        return $reset !== false && hash_equals((string) $reset['token_hash'], hash('sha256', $token));
+    }
+
+    /** @throws ValidationException */
+    public function resetPassword(
+        string $email,
+        string $token,
+        string $password,
+        string $confirmation,
+    ): void {
+        $email = mb_strtolower(trim($email));
+        $errors = [];
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 150) {
+            $errors['email'] = 'Ingresa un correo válido.';
+        }
+        $errors = array_merge($errors, $this->validatePassword($password, $confirmation, true));
+
+        if ($errors !== []) {
+            throw new ValidationException($errors);
+        }
+
+        $token = $this->normalizeResetToken($token);
+        if ($token === null) {
+            throw new ValidationException(['form' => 'El enlace no es válido o ya venció. Solicita uno nuevo.']);
+        }
+
+        $pdo = $this->database->getConnection();
+        $pdo->beginTransaction();
+
+        try {
+            $statement = $pdo->prepare(
+                'SELECT token_hash FROM password_reset_tokens
+                 WHERE email = :email AND expires_at > CURRENT_TIMESTAMP FOR UPDATE'
+            );
+            $statement->execute(['email' => $email]);
+            $reset = $statement->fetch();
+
+            if ($reset === false || !hash_equals((string) $reset['token_hash'], hash('sha256', $token))) {
+                $pdo->rollBack();
+                throw new ValidationException(['form' => 'El enlace no es válido o ya venció. Solicita uno nuevo.']);
+            }
+
+            $statement = $pdo->prepare('UPDATE users SET password = :password WHERE email = :email');
+            $statement->execute([
+                'password' => password_hash($password, PASSWORD_DEFAULT),
+                'email' => $email,
+            ]);
+
+            if ($statement->rowCount() !== 1) {
+                $pdo->rollBack();
+                throw new ValidationException(['form' => 'No se pudo actualizar la contraseña.']);
+            }
+
+            $statement = $pdo->prepare('DELETE FROM password_reset_tokens WHERE email = :email');
+            $statement->execute(['email' => $email]);
+            $pdo->commit();
+        } catch (PDOException $exception) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
     /** @throws ValidationException */
     public function register(string $name, string $email, string $password, string $confirmation): User
     {
@@ -228,6 +339,16 @@ class User
         }
 
         return $errors;
+    }
+
+    private function normalizeResetToken(string $token): ?string
+    {
+        $token = trim($token);
+        if (preg_match('/Password reset token:\s*([a-f0-9]{64})/i', $token, $matches) === 1) {
+            $token = $matches[1];
+        }
+
+        return preg_match('/\A[a-f0-9]{64}\z/i', $token) === 1 ? $token : null;
     }
 
     /** @return array<string, string> */

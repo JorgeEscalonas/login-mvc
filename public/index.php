@@ -25,6 +25,7 @@ use App\Controllers\AdminController;
 use App\Controllers\RegisterController;
 use App\Controllers\UserManagementController;
 use App\Core\RateLimiter;
+use App\Controllers\PasswordResetController;
 
 Dotenv::createImmutable(__DIR__ . '/..')->load();
 
@@ -52,6 +53,7 @@ $rateLimiter = new RateLimiter($session);
 
 $authController = new AuthController($user, $view, $session, $csrf, $rateLimiter);
 $registerController = new RegisterController($user, $view, $session, $csrf);
+$passwordResetController = new PasswordResetController($user, $view, $csrf);
 $userManagementController = new UserManagementController($user, $view, $session, $csrf);
 $adminController = new AdminController($user, $view);
 $dashboardController = new DashboardController($view, $session, $user);
@@ -70,6 +72,10 @@ $router->get('/admin', $authMiddleware->protect(
 
 $router->get('/register', [$registerController, 'showForm']);
 $router->post('/register', [$registerController, 'store']);
+$router->get('/forgot-password', [$passwordResetController, 'showRequestForm']);
+$router->post('/forgot-password', [$passwordResetController, 'requestReset']);
+$router->post('/verify-reset-token', [$passwordResetController, 'verifyToken']);
+$router->post('/reset-password', [$passwordResetController, 'resetPassword']);
 
 $router->get('/admin/users', $authMiddleware->adminOnly([$userManagementController, 'index']));
 $router->get('/admin/users/create', $authMiddleware->adminOnly([$userManagementController, 'create']));
