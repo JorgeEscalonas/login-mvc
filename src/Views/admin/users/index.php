@@ -1,19 +1,23 @@
-<div class="admin-heading">
+<?php
+$users = $users ?? [];
+$currentUserId = $currentUserId ?? 0;
+$error = $error ?? null;
+?>
+
+<div class="page-heading">
     <div>
-        <p class="eyebrow">Administración</p>
+        <p class="eyebrow">CENTRO DE CONTROL</p>
         <h1>Usuarios</h1>
+        <p class="page-description">Administra cuentas, perfiles y permisos.</p>
     </div>
-    <a class="text-link" href="/dashboard">Volver al panel</a>
+    <a class="button-link button-primary" href="/admin/users/create"><span aria-hidden="true">＋</span> Crear usuario</a>
 </div>
 
 <?php if (!empty($error)): ?>
     <p class="alert"><?= $this->e($error) ?></p>
 <?php endif; ?>
 
-<div class="admin-toolbar">
-    <p class="admin-summary">Cuentas registradas <strong><?= count($users) ?></strong></p>
-    <a class="button-link button-primary" href="/admin/users/create">+ Crear usuario</a>
-</div>
+<p class="admin-summary">Cuentas registradas <strong><?= count($users) ?></strong></p>
 
 <div class="table-scroll">
     <table class="users-table">

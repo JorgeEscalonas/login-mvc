@@ -11,6 +11,7 @@ class View
     public function __construct(
         private readonly string $basePath,
         private readonly Csrf $csrf,
+        private readonly Session $session,
     ) {
     }
 
@@ -24,12 +25,17 @@ class View
     public function render(string $view, array $data = []): void
     {
         $content = $this->capture($view, $data);
+        $appShell = $view === 'dashboard/index' || str_starts_with($view, 'admin/');
 
         echo $this->capture('layouts/main', [
             'content' => $content,
             'title'   => $data['title'] ?? 'Login MVC',
             'wide' => $data['wide'] ?? false,
             'pageClass' => (string) ($data['pageClass'] ?? ''),
+            'appShell' => $appShell,
+            'navName' => (string) $this->session->get('user_name', 'Usuario'),
+            'navRole' => (string) $this->session->get('user_role', 'user'),
+            'activePath' => parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/',
         ]);
     }
 

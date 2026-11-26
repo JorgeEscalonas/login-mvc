@@ -8,6 +8,7 @@
         }
 
         document.title = page.title;
+        document.body.className = page.body.className;
         document.body.innerHTML = page.body.innerHTML;
         document.querySelector('main')?.focus();
     };
@@ -38,6 +39,21 @@
         }
     };
 
+    document.addEventListener('click', (event) => {
+        const toggle = event.target.closest('.menu-toggle');
+        const close = event.target.closest('[data-sidebar-close]');
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.querySelector('.sidebar-overlay');
+
+        if (!sidebar) return;
+        if (!toggle && !close) return;
+
+        const isOpen = toggle ? !sidebar.classList.contains('is-open') : false;
+        sidebar.classList.toggle('is-open', isOpen);
+        overlay?.classList.toggle('is-visible', isOpen);
+        document.querySelector('.menu-toggle')?.setAttribute('aria-expanded', String(isOpen));
+    });
+
     document.addEventListener('click', async (event) => {
         const link = event.target.closest('a[href]');
         if (!link || event.defaultPrevented || event.button !== 0) return;
@@ -48,6 +64,9 @@
         if (url.origin !== window.location.origin) return;
 
         event.preventDefault();
+        document.querySelector('.sidebar')?.classList.remove('is-open');
+        document.querySelector('.sidebar-overlay')?.classList.remove('is-visible');
+        document.querySelector('.menu-toggle')?.setAttribute('aria-expanded', 'false');
         try {
             await loadPage(url.href, true);
         } catch {
