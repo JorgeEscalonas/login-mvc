@@ -125,7 +125,7 @@ class PasswordResetController
     ): void
     {
         $this->view->render('auth/forgot-password', [
-            'title' => 'Recuperar contraseña',
+            'title' => $stage === 'token' ? 'Verificar token' : 'Recuperar contraseña',
             'email' => $email,
             'token' => $token,
             'stage' => $stage,

@@ -42,7 +42,7 @@ $session = new Session();
 $session->start();
 
 $csrf = new Csrf($session);
-$view = new View(__DIR__ . '/../src/Views', $csrf);
+$view = new View(__DIR__ . '/../src/Views', $csrf, $session);
 $database = new Database($config);
 
 // --- Aplicación ---

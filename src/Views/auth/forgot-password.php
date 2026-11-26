@@ -1,4 +1,3 @@
-<h1>Recuperar contraseña</h1>
 <?php
 $email = $email ?? '';
 $token = $token ?? '';
