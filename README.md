@@ -7,6 +7,7 @@ Proyecto universitario desarrollado con **PHP puro** (sin frameworks), arquitect
 ## Funcionalidades
 
 - **Login** con sesión, protección CSRF y cierre de sesión por POST.
+- **AJAX** en formularios y navegación interna para actualizar la página sin recarga; enlaces externos mantienen su comportamiento normal.
 - **Recuperación local de contraseña** en tres pasos con token temporal de un solo uso.
 - **Registro público** con validación; las cuentas creadas desde el formulario reciben siempre el rol `user`. El administrador puede asignar roles desde el panel.
 - **Límite de intentos de login:** se cuentan los fallos de los últimos 15 minutos por combinación de correo + IP. Al alcanzar 5, los nuevos intentos reciben HTTP 429 mientras haya 5 fallos en esa ventana móvil; la respuesta incluye `Retry-After: 900`.
